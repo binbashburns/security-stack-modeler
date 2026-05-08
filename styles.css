@@ -77,6 +77,22 @@
 .theme-toggle:hover { border-color: var(--border-strong); background: var(--surface-warm); }
 .theme-toggle-icon { line-height: 1; }
 
+.contribute-link {
+  margin-left: 8px;
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background 120ms, border-color 120ms;
+}
+.contribute-link:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-warm);
+  text-decoration: none;
+}
+
 * { box-sizing: border-box; }
 
 input, textarea, select {

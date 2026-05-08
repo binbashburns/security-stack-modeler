@@ -1,0 +1,117 @@
+name: Price freshness audit
+
+
+on:
+  schedule:
+    - cron: "0 7 * * 1" # Monday 07:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  models: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run price audit
+        id: audit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node .github/scripts/price-freshness.mjs > /tmp/report.json
+          echo "report-path=/tmp/report.json" >> "$GITHUB_OUTPUT"
+
+      - name: Post or update issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('/tmp/report.json', 'utf8'));
+            const drifts = report.drifts || [];
+            const noPrice = report.noPrice || [];
+            const failures = report.fetchFailures || [];
+
+            const total = drifts.length + noPrice.length + failures.length;
+            if (total === 0) {
+              core.info(`All ${report.total} commercial price citations match. Nothing to report.`);
+              return;
+            }
+
+            const lines = [];
+            lines.push(`Weekly price audit found ${total} entr${total === 1 ? 'y' : 'ies'} that need attention out of ${report.total} commercial solutions checked.`);
+            lines.push('');
+
+            if (drifts.length) {
+              lines.push(`### Cited price drifted from page (${drifts.length})`);
+              lines.push('');
+              lines.push('| Solution | Cited unit | Page shows | Direction | Comment |');
+              lines.push('| --- | --- | --- | --- | --- |');
+              for (const d of drifts) {
+                lines.push(`| ${d.vendor} ${d.name} ([link](${d.url})) | $${d.citedUnit} | ${d.displayedPrice || '—'} ${d.displayedUnit || ''} | ${d.driftDirection || '—'} | ${(d.comment || '').replace(/\|/g, '\\|')} |`);
+              }
+              lines.push('');
+            }
+
+            if (noPrice.length) {
+              lines.push(`### Cited URL no longer shows a price (${noPrice.length})`);
+              lines.push('');
+              lines.push('| Solution | Cited URL | Comment |');
+              lines.push('| --- | --- | --- |');
+              for (const n of noPrice) {
+                lines.push(`| ${n.vendor} ${n.name} | [link](${n.url}) | ${(n.comment || '').replace(/\|/g, '\\|')} |`);
+              }
+              lines.push('');
+              lines.push('Action: replace `cost.sourceUrl` with a page that shows a current dollar amount, or move the solution to a Vendr/community aggregator citation.');
+              lines.push('');
+            }
+
+            if (failures.length) {
+              lines.push(`### URL fetch problems (${failures.length})`);
+              lines.push('');
+              lines.push('| Solution | URL | Status |');
+              lines.push('| --- | --- | --- |');
+              for (const f of failures) {
+                const detail = f.http ? `HTTP ${f.http}` : (f.error || f.status);
+                lines.push(`| ${f.vendor} ${f.name} | ${f.url} | ${detail} |`);
+              }
+              lines.push('');
+            }
+
+            const body = lines.join('\n');
+            const title = `Price audit: ${total} entr${total === 1 ? 'y' : 'ies'} need review (${report.generated.slice(0, 10)})`;
+
+            const open = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'price-stale',
+              per_page: 10,
+            });
+            if (open.data.length > 0) {
+              const issue = open.data[0];
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body,
+              });
+              core.info(`Appended audit to existing issue #${issue.number}.`);
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['price-stale'],
+              });
+            }

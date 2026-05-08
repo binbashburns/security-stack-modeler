@@ -1,0 +1,158 @@
+name: Weekly link check
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Every Monday at 06:00 UTC
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'data.js'
+      - '.github/workflows/link-check.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-links:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check solution source links
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const path = require('path');
+
+            global.window = {};
+            require(path.join(process.cwd(), 'data.js'));
+            const SOLUTIONS = global.window.SOLUTIONS || [];
+
+            const urlToSolutions = new Map();
+            const recordUrl = (url, solutionLabel) => {
+              if (!url || typeof url !== 'string' || !url.startsWith('http')) return;
+              if (!urlToSolutions.has(url)) urlToSolutions.set(url, new Set());
+              urlToSolutions.get(url).add(solutionLabel);
+            };
+
+            for (const sol of SOLUTIONS) {
+              if (sol.id === 'none') continue;
+              const label = `${sol.vendor}. ${sol.name} (${sol.id})`;
+              recordUrl(sol.cost && sol.cost.sourceUrl, label);
+              for (const extra of (sol.extraSources || [])) {
+                recordUrl(extra.url, label);
+              }
+            }
+
+            const entries = Array.from(urlToSolutions.entries());
+            core.info(`Checking ${entries.length} unique URLs across ${SOLUTIONS.length - 1} solutions...`);
+
+            const BOT_BLOCK_CODES = new Set([401, 403, 429]);
+
+            async function checkUrl(url) {
+              const ua = {
+                'User-Agent': 'Mozilla/5.0 (compatible; security-stack-modeler-link-check/1.0; +https://github.com/)',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+              };
+              try {
+                let response = await fetch(url, { method: 'HEAD', redirect: 'follow', headers: ua });
+                if (!response.ok || response.status >= 400) {
+                  response = await fetch(url, { method: 'GET', redirect: 'follow', headers: ua });
+                }
+                const status = response.status;
+                const ok = status >= 200 && status < 400;
+                return {
+                  url,
+                  status,
+                  ok,
+                  botBlocked: !ok && BOT_BLOCK_CODES.has(status),
+                };
+              } catch (error) {
+                return {
+                  url,
+                  status: 0,
+                  ok: false,
+                  botBlocked: false,
+                  error: error.message || String(error),
+                };
+              }
+            }
+
+            const failures = [];
+            const botBlocked = [];
+            const CONCURRENCY = 6;
+            let cursor = 0;
+            async function worker() {
+              while (cursor < entries.length) {
+                const i = cursor++;
+                const [url, sols] = entries[i];
+                const result = await checkUrl(url);
+                if (result.ok) continue;
+                const enriched = { ...result, solutions: Array.from(sols) };
+                if (result.botBlocked) botBlocked.push(enriched);
+                else failures.push(enriched);
+              }
+            }
+            await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+
+            if (botBlocked.length > 0) {
+              core.warning(`${botBlocked.length} URL${botBlocked.length === 1 ? '' : 's'} returned anti-bot status (401/403/429). Logged, not failing:`);
+              for (const b of botBlocked) {
+                core.warning(`  [${b.status}] ${b.url} (cited by: ${b.solutions.join(', ')})`);
+              }
+            }
+
+            if (failures.length === 0) {
+              core.info('No real link failures. All solution source URLs are reachable.');
+              return;
+            }
+
+            core.warning(`${failures.length} link${failures.length === 1 ? '' : 's'} failed.`);
+
+            const lines = [];
+            lines.push('The weekly link check found broken or unreachable URLs in the solution catalog.');
+            lines.push('');
+            lines.push('Each failing URL is one of the following: a moved vendor pricing page, a renamed OSS project home, a redirect loop, or a transient host outage. Re-run the workflow once before treating it as a real issue. If it persists, update the `cost.sourceUrl` (or the matching `extraSources` entry) in `data.js` to the new canonical location.');
+            lines.push('');
+            lines.push('| URL | Status | Solutions citing it | Error |');
+            lines.push('| --- | ------ | ------------------- | ----- |');
+            for (const f of failures) {
+              const sols = f.solutions.join('<br>');
+              const errorText = f.error ? f.error.replace(/\|/g, '\\|').replace(/\n/g, ' ') : '';
+              lines.push(`| ${f.url} | ${f.status} | ${sols} | ${errorText} |`);
+            }
+            const body = lines.join('\n');
+            const title = `Link check failures (${new Date().toISOString().slice(0, 10)})`;
+
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'link-check',
+              per_page: 20,
+            });
+
+            if (existing.data.length > 0) {
+              const issue = existing.data[0];
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body,
+              });
+              core.info(`Appended findings as a comment on existing issue #${issue.number}.`);
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['link-check'],
+              });
+            }
+
+            core.setFailed(`${failures.length} URL${failures.length === 1 ? '' : 's'} failed the link check.`);

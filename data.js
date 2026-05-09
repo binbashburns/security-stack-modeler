@@ -1,10 +1,13 @@
 window.MODEL_META = {
+  // Defaults sized for an early-stage / Series-A startup (~25 employees,
+  // dev-heavy headcount). Sources: Carta State of Private Markets (median
+  // seed: 8-12 FTE, Series A: 20-50 FTE), Crunchbase company-size data.
   defaultSizing: {
-    developers:    100,
-    endpoints:     100,
-    users:         100,
-    cloudInstances: 50,
-    containers:     25,
+    developers:    15,
+    endpoints:     40,
+    users:         30,
+    cloudInstances: 20,
+    containers:    15,
   },
 
   costModelDimensions: {

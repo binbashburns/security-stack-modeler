@@ -8,6 +8,7 @@ on:
       - "**/*.css"
       - "**/*.js"
       - "**/*.md"
+      - ".github/workflows/security.yml"
   push:
     branches: [main]
   schedule:

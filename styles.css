@@ -804,6 +804,7 @@ button.cap-card:focus-visible {
 .org-sizing-cell {
   display: flex;
   flex-direction: column;
+  justify-content: flex-end;
   gap: 4px;
   font-size: 12.5px;
   color: var(--text);
@@ -813,6 +814,9 @@ button.cap-card:focus-visible {
   font-weight: 500;
   line-height: 1.3;
   color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .org-sizing-input {
   width: 100%;

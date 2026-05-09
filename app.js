@@ -11,9 +11,17 @@ const COST_DIMS  = window.MODEL_META.costModelDimensions;
 
 const SIZING_LABELS = {
   developers:     'Developers',
-  endpoints:      'Endpoints (workstations + servers)',
+  endpoints:      'Endpoints',
   users:          'Workforce users',
-  cloudInstances: 'Cloud instances (EC2 / VM / Compute Engine)',
+  cloudInstances: 'Cloud instances',
+  containers:     'Container images',
+};
+
+const SIZING_HINTS = {
+  developers:     'Engineers writing code',
+  endpoints:      'Workstations + servers',
+  users:          'Total workforce identities',
+  cloudInstances: 'EC2 / VM / Compute Engine',
   containers:     'Container images managed',
 };
 
@@ -178,6 +186,7 @@ function renderOrgSizingPanel() {
   const grid = el('div', 'org-sizing-grid');
   for (const [dim, label] of Object.entries(SIZING_LABELS)) {
     const cell = el('label', 'org-sizing-cell');
+    if (SIZING_HINTS[dim]) cell.title = SIZING_HINTS[dim];
     cell.appendChild(el('span', 'org-sizing-label', label));
     const input = document.createElement('input');
     input.type = 'number';

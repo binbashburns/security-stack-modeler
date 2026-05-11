@@ -476,6 +476,38 @@ a:hover { text-decoration: underline; }
 }
 .is-gap .cap-card-cost { color: var(--text-subtle); font-weight: 600; }
 
+/* Multi-capability tools: cost shows once on the primary cap; "included" on the rest. */
+.cap-card.is-included .cap-card-cost {
+  color: var(--text-subtle);
+  font-weight: 600;
+  font-style: italic;
+  text-transform: lowercase;
+}
+
+/* Brief highlight when a multi-capability selection auto-fills sibling capabilities. */
+@keyframes autofill-flash {
+  0%   { box-shadow: 0 0 0 0 var(--accent), 0 0 0 0 var(--accent); transform: scale(1); }
+  35%  { box-shadow: 0 0 0 3px var(--accent), 0 0 12px 2px var(--accent); transform: scale(1.015); }
+  100% { box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent; transform: scale(1); }
+}
+.cap-card.is-autofill-flash {
+  animation: autofill-flash 900ms ease-out 1;
+}
+
+/* "BETA" pill on the CI export button. */
+.beta-badge {
+  display: inline-block;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: 3px;
+  background: var(--accent);
+  color: var(--bg, #fff);
+  vertical-align: middle;
+}
+
 .cap-card-source {
   font-size: 8.5px; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.05em;

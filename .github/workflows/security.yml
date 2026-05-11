@@ -20,17 +20,23 @@ permissions:
   issues: write
 
 jobs:
+  # Stage 1 — gate: fail-fast on credentials before spending time on heavier scans.
   secrets:
     uses: binbashburns/security-pipelines/.github/workflows/secrets.yml@main
 
+  # Stage 2 — static analysis (SAST + SBOM/SCA), parallel after secrets passes.
   sast:
+    needs: secrets
     if: github.event_name == 'pull_request'
     uses: binbashburns/security-pipelines/.github/workflows/sast.yml@main
     with:
       language: javascript
 
   sbom:
+    needs: secrets
     uses: binbashburns/security-pipelines/.github/workflows/sbom-vuln.yml@main
 
+  # Stage 3 — dynamic scan (slowest). Gated on secrets + sbom; not on sast (PR-only).
   dast:
+    needs: [secrets, sbom]
     uses: binbashburns/security-pipelines/.github/workflows/dast.yml@main

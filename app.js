@@ -40,6 +40,7 @@ const state = {
   costOverrides: {},
   frameworkFilter: 'all',
   modal: null,
+  lastAutoFill: null, // { solId, capIds: [] } — for one-shot highlight after auto-fill
 };
 
 function loadEmptyBoard() {
@@ -82,6 +83,40 @@ function selectedSolutions() {
   const ids = new Set(Object.values(state.selections));
   ids.delete('none');
   return [...ids].map(id => SOLUTIONS_BY_ID[id]).filter(Boolean);
+}
+
+// Apply a solution selection to a capability, auto-filling every other capability
+// the solution covers. Returns the list of cap ids that were auto-filled (excluding
+// the primary cap the user clicked).
+function applySelection(capId, solId) {
+  const sol = SOLUTIONS_BY_ID[solId];
+  state.selections[capId] = solId;
+  const autoFilled = [];
+  if (sol && Array.isArray(sol.capabilities) && sol.capabilities.length > 1 && solId !== 'none') {
+    for (const otherCap of sol.capabilities) {
+      if (otherCap === capId) continue;
+      if (!(otherCap in state.selections)) continue;
+      if (state.selections[otherCap] === solId) continue;
+      state.selections[otherCap] = solId;
+      autoFilled.push(otherCap);
+    }
+  }
+  state.lastAutoFill = autoFilled.length > 0
+    ? { solId, capIds: [capId, ...autoFilled] }
+    : null;
+  return autoFilled;
+}
+
+// The "primary" cap for a solution is the first cap (in the tool's own capability
+// declaration order) that is currently selected with that tool. Used to dedupe the
+// cost display so a multi-cap tool's cost only shows once across its rows.
+function isPrimaryCapForSolution(capId, solId) {
+  const sol = SOLUTIONS_BY_ID[solId];
+  if (!sol || !Array.isArray(sol.capabilities) || sol.capabilities.length <= 1) return true;
+  for (const cid of sol.capabilities) {
+    if (state.selections[cid] === solId) return cid === capId;
+  }
+  return true;
 }
 
 function totalAnnualCost() {
@@ -156,6 +191,8 @@ function render() {
     c.setAttribute('aria-selected', active ? 'true' : 'false');
   });
 
+  const hadAutoFill = state.lastAutoFill;
+
   const main = $('#main');
   main.innerHTML = '';
   switch (state.view) {
@@ -164,6 +201,11 @@ function render() {
     case 'pipeline': main.appendChild(renderPipelineView()); break;
   }
   renderModal();
+
+  // One-shot: clear auto-fill flash so the CSS animation only plays on the next paint.
+  if (hadAutoFill) {
+    state.lastAutoFill = null;
+  }
 }
 
 function renderScenarioView() {
@@ -306,8 +348,11 @@ function renderPresetChips() {
 
   const ciBtn = el('button', 'export-btn export-btn-ci');
   ciBtn.type = 'button';
-  ciBtn.textContent = 'Export CI workflow (YAML)';
-  ciBtn.title = 'Generate a GitHub Actions workflow file that runs the selected scanners.';
+  const ciLabel = el('span', '', 'Export CI workflow (YAML) ');
+  const ciBadge = el('span', 'beta-badge', 'BETA');
+  ciBtn.appendChild(ciLabel);
+  ciBtn.appendChild(ciBadge);
+  ciBtn.title = 'Generate a GitHub Actions workflow file that runs the selected scanners. Output is rough — review before use.';
   ciBtn.addEventListener('click', () => {
     state.modal = { type: 'ci-export' };
     render();
@@ -360,12 +405,16 @@ function renderCapCard(cap) {
   const sol = SOLUTIONS_BY_ID[solId] || SOLUTIONS_BY_ID['none'];
   const unselected = isUnselected(sol);
   const cost = effectiveCost(sol);
+  const isPrimary = isPrimaryCapForSolution(cap.id, solId);
+  const isAutoFlash = state.lastAutoFill && state.lastAutoFill.capIds.includes(cap.id);
 
   const card = el('button', 'cap-card');
   card.type = 'button';
   card.setAttribute('aria-label', `Solution for ${cap.name}: ${unselected ? 'not selected' : sol.vendor + ' ' + sol.name}. Click to change.`);
   if (unselected) card.classList.add('is-gap');
   else card.classList.add('is-active');
+  if (!unselected && !isPrimary) card.classList.add('is-included');
+  if (isAutoFlash) card.classList.add('is-autofill-flash');
 
   card.appendChild(el('div', 'cap-card-label', cap.name));
 
@@ -382,6 +431,7 @@ function renderCapCard(cap) {
   const footer = el('div', 'cap-card-footer');
   let costText;
   if (unselected) costText = ',';
+  else if (!isPrimary) costText = 'included';
   else if (sol.cost.source === 'free') costText = 'free';
   else costText = fmt$(cost.annual) + '/yr';
   footer.appendChild(el('span', 'cap-card-cost', costText));
@@ -709,7 +759,7 @@ function renderPickerOption(capId, sol, currentId) {
     selectBtn.type = 'button';
     selectBtn.addEventListener('click', e => {
       e.stopPropagation();
-      state.selections[capId] = sol.id;
+      applySelection(capId, sol.id);
       state.scenarioId = 'custom';
       closeModal();
     });
@@ -1253,9 +1303,12 @@ function renderPrintSummary() {
     const unselected = isUnselected(sol);
     if (unselected) tr.classList.add('row-gap');
     const cost = effectiveCost(sol);
+    const isPrimary = isPrimaryCapForSolution(cap.id, sol.id);
     const costStr = unselected
       ? ','
-      : (sol.cost.source === 'free' ? 'free' : fmt$(cost.annual) + '/yr');
+      : !isPrimary
+        ? 'included'
+        : (sol.cost.source === 'free' ? 'free' : fmt$(cost.annual) + '/yr');
     const sourceStr = sol.cost.sourceUrl
       ? (sol.cost.sourceUrl.startsWith('http')
           ? `<a href="${escapeAttr(sol.cost.sourceUrl)}">${escapeText(shortUrl(sol.cost.sourceUrl))}</a>`

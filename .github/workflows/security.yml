@@ -9,10 +9,14 @@ on:
       - "**/*.js"
       - "**/*.md"
       - ".github/workflows/security.yml"
-  push:
-    branches: [main]
   schedule:
     - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+# Cancel an older in-flight run on the same PR / ref when a new one starts.
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

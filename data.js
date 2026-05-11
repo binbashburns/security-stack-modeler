@@ -365,10 +365,10 @@ window.SOLUTIONS = [
 
   { id: 'sonarqube-developer', vendor: 'SonarSource', name: 'SonarQube Developer',
     capabilities: ['sast'],
-    cost: { model: 'fixed', unit: 1900, units: 1, annual: 1900, source: 'estimate',
-            sourceUrl: 'https://www.sonarsource.com/plans-and-pricing/',
+    cost: { model: 'fixed', unit: 750, units: 1, annual: 750, source: 'estimate',
+            sourceUrl: 'https://www.sonarsource.com/plans-and-pricing/sonarqube/',
             contact: 'Vendor sales',
-            note: 'Developer tier starts near $160/yr per 100k LOC. Adds branch analysis, security rules.' },
+            note: 'Developer Edition starts at $750/yr (per instance, per year, priced by LOC band). Adds branch analysis, security rules.' },
     ecosystem: ['commercial'], dsoStages: ['commit','build','pre-release'] },
 
   { id: 'semgrep-oss', vendor: 'Semgrep', name: 'Semgrep OSS',
@@ -384,10 +384,10 @@ window.SOLUTIONS = [
 
   { id: 'semgrep-team', vendor: 'Semgrep', name: 'Semgrep AppSec Platform (Team)',
     capabilities: ['sast','precommit-hooks'],
-    cost: { model: 'per-developer', unit: 480, units: 100, annual: 48000, source: 'estimate',
+    cost: { model: 'per-developer', unit: 360, units: 100, annual: 36000, source: 'estimate',
             sourceUrl: 'https://semgrep.dev/pricing',
             contact: 'Vendor sales',
-            note: 'Team tier near $40/dev/month. Adds managed rules + dashboards.' },
+            note: 'Team tier near $30/dev/month. Adds managed rules + dashboards.' },
     ecosystem: ['commercial'], dsoStages: ['pre-commit','commit','build'] },
 
   { id: 'snyk-code', vendor: 'Snyk', name: 'Snyk Code (SAST)',
@@ -404,10 +404,10 @@ window.SOLUTIONS = [
 
   { id: 'github-advanced-security', vendor: 'GitHub', name: 'GitHub Advanced Security',
     capabilities: ['sast','sca','sbom','precommit-hooks'],
-    cost: { model: 'per-developer', unit: 588, units: 100, annual: 58800, source: 'estimate',
+    cost: { model: 'per-developer', unit: 228, units: 100, annual: 22800, source: 'estimate',
             sourceUrl: 'https://github.com/enterprise/advanced-security',
             contact: 'Vendor sales',
-            note: 'List near $49/active-committer/month. CodeQL + secret scanning + Dependabot bundled.' },
+            note: 'List near $19/active-committer/month. CodeQL + secret scanning + Dependabot bundled.' },
     ecosystem: ['commercial'], dsoStages: ['pre-commit','commit','build'] },
 
   { id: 'gitlab-ultimate', vendor: 'GitLab', name: 'GitLab Ultimate',
@@ -420,10 +420,10 @@ window.SOLUTIONS = [
 
   { id: 'checkmarx-one', vendor: 'Checkmarx', name: 'Checkmarx One',
     capabilities: ['sast','sca','iac-scan','container-scan'],
-    cost: { model: 'fixed', unit: 54000, units: 1, annual: 54000, source: 'estimate',
+    cost: { model: 'fixed', unit: 56415, units: 1, annual: 56415, source: 'estimate',
             sourceUrl: 'https://www.vendr.com/marketplace/checkmarx',
             contact: 'Vendor sales',
-            note: 'Checkmarx does not publish list pricing. Vendr / appsecsanta aggregates: median annual contract $54k. 250-dev enterprise deployments reportedly exceed $500k. Bundle discounts of 20–40% common when buying SAST + SCA + container together.' },
+            note: 'Checkmarx does not publish list pricing. Vendr aggregates the median annual contract at $56,415. 250-dev enterprise deployments reportedly exceed $500k. Bundle discounts of 20–40% common when buying SAST + SCA + container together.' },
     ecosystem: ['commercial'], dsoStages: ['commit','build','pre-release'] },
 
   { id: 'bandit', vendor: 'PyCQA', name: 'Bandit (Python)',
@@ -465,10 +465,10 @@ window.SOLUTIONS = [
 
   { id: 'snyk-open-source', vendor: 'Snyk', name: 'Snyk Open Source (SCA)',
     capabilities: ['sca','sbom'],
-    cost: { model: 'per-developer', unit: 312, units: 100, annual: 31200, source: 'estimate',
+    cost: { model: 'per-developer', unit: 300, units: 100, annual: 30000, source: 'estimate',
             sourceUrl: 'https://snyk.io/plans/',
             contact: 'Vendor sales',
-            note: 'Team plan near $26/dev/month annualized to $312/dev/year for Open Source module.' },
+            note: 'Team plan near $25/dev/month annualized to $300/dev/year for Open Source module.' },
     ecosystem: ['commercial'], dsoStages: ['pre-commit','commit','build'] },
 
   { id: 'mend-sca', vendor: 'Mend', name: 'Mend SCA',
@@ -524,18 +524,18 @@ window.SOLUTIONS = [
 
   { id: 'aqua-platform', vendor: 'Aqua Security', name: 'Aqua Cloud Native Security',
     capabilities: ['container-scan','runtime-detect','cnapp'],
-    cost: { model: 'fixed', unit: 35000, units: 1, annual: 35000, source: 'estimate',
-            sourceUrl: 'https://www.trustradius.com/products/aqua-cloud-native-security-platform/pricing',
+    cost: { model: 'fixed', unit: 36325, units: 1, annual: 36325, source: 'estimate',
+            sourceUrl: 'https://www.vendr.com/marketplace/aquasec',
             contact: 'Vendor sales',
-            note: 'Aqua does not publish list pricing. TrustRadius lists 3 plans starting at $10,188/yr. SMB CNAPP deployments commonly fall in $30k–$60k/yr for the platform bundle (containers + workloads + AppSec) per Capterra and review aggregates.' },
+            note: 'Aqua does not publish list pricing. Vendr median negotiated contract $36,325/yr (range $32,040–$335,948). TrustRadius lists 3 plans starting at $10,188/yr; SMB CNAPP deployments typically fall in the $30k–$60k bundle range.' },
     ecosystem: ['commercial'], dsoStages: ['build','pre-release','operate'] },
 
   { id: 'sysdig-secure', vendor: 'Sysdig', name: 'Sysdig Secure',
     capabilities: ['container-scan','runtime-detect','cnapp','cspm'],
-    cost: { model: 'fixed', unit: 30000, units: 1, annual: 30000, source: 'estimate',
+    cost: { model: 'fixed', unit: 98145, units: 1, annual: 98145, source: 'estimate',
             sourceUrl: 'https://www.vendr.com/marketplace/sysdig',
             contact: 'Vendor sales',
-            note: 'Sysdig is per-host/per-month. Vendr aggregate: $40–$120 per host per month depending on bundle, with volume bands at 500/1,000/1,000+ hosts. SMB total ~$25k–$50k/yr.' },
+            note: 'Sysdig is per-host/per-month. Vendr median negotiated deal $98,145/yr; pricing typically $40–$120/host/month depending on bundle, with volume bands at 500/1,000/1,000+ hosts.' },
     ecosystem: ['commercial'], dsoStages: ['build','pre-release','operate'] },
 
   { id: 'aws-ecr-scan', vendor: 'AWS', name: 'Amazon ECR Image Scanning (Enhanced)',
@@ -861,10 +861,10 @@ window.SOLUTIONS = [
 
   { id: 'splunk-cloud', vendor: 'Splunk', name: 'Splunk Enterprise / Cloud',
     capabilities: ['siem'],
-    cost: { model: 'fixed', unit: 75000, units: 1, annual: 75000, source: 'estimate',
-            sourceUrl: 'https://underdefense.com/industry-pricings/splunk-siem-pricing/',
+    cost: { model: 'fixed', unit: 74940, units: 1, annual: 74940, source: 'estimate',
+            sourceUrl: 'https://www.vendr.com/marketplace/splunk',
             contact: 'Vendor sales',
-            note: 'Splunk does not publish list pricing. UnderDefense: list ~$1,800–$2,700/GB/day annual; verified customer at ~$500/GB/day after multi-year discount. SMB at 50–100 GB/day commonly lands $50k–$150k/yr per Vendr aggregate.' },
+            note: 'Splunk does not publish list pricing. Vendr median negotiated contract $74,940 across 142 purchases. UnderDefense lists $1,800–$18,000/yr for 1–10 GB/day footprints; SMB at 50–100 GB/day commonly lands $50k–$150k/yr.' },
     ecosystem: ['commercial'] },
 
   { id: 'elastic-stack', vendor: 'Elastic', name: 'Elastic Stack (ELK, self-hosted)',
@@ -893,10 +893,10 @@ window.SOLUTIONS = [
 
   { id: 'datadog-cloud-siem', vendor: 'Datadog', name: 'Datadog Cloud SIEM',
     capabilities: ['siem','runtime-detect'],
-    cost: { model: 'consumption', unit: 0.20, units: 100000, annual: 20000, source: 'estimate',
+    cost: { model: 'consumption', unit: 0.10, units: 100000, annual: 10000, source: 'estimate',
             sourceUrl: 'https://www.datadoghq.com/pricing/',
             contact: 'Vendor sales',
-            note: 'Cloud SIEM near $0.20/GB analyzed. ~100GB/month assumption.' },
+            note: 'Cloud SIEM starting at $0.10/GB ingested or scanned. ~100GB/month assumption.' },
     ecosystem: ['commercial'] },
 
   { id: 'aws-guardduty', vendor: 'AWS', name: 'Amazon GuardDuty',
@@ -909,10 +909,10 @@ window.SOLUTIONS = [
 
   { id: 'aws-security-hub', vendor: 'AWS', name: 'AWS Security Hub',
     capabilities: ['cspm','reporting'],
-    cost: { model: 'fixed', unit: 1000, units: 1, annual: 1000, source: 'estimate',
+    cost: { model: 'per-instance', unit: 45, units: 100, annual: 4500, source: 'estimate',
             sourceUrl: 'https://aws.amazon.com/security-hub/pricing/',
             contact: 'Cloud account team',
-            note: 'Compliance check + finding ingestion pricing. SMB footprint typically <$2k/yr; midpoint $1,000.' },
+            note: 'Essentials plan: $3.75 per resource/month ($45/resource/year). 1 EC2, 12 Lambdas, 18 ECR images, or 125 IAM users/roles each count as one resource. Threat Analytics add-on extra.' },
     ecosystem: ['aws-native'] },
 
   { id: 'azure-sentinel', vendor: 'Microsoft', name: 'Microsoft Sentinel',
@@ -951,18 +951,18 @@ window.SOLUTIONS = [
 
   { id: 'wiz', vendor: 'Wiz', name: 'Wiz CNAPP',
     capabilities: ['cnapp','cspm','container-scan','vm-cloud'],
-    cost: { model: 'fixed', unit: 75000, units: 1, annual: 75000, source: 'estimate',
+    cost: { model: 'fixed', unit: 149319, units: 1, annual: 149319, source: 'estimate',
             sourceUrl: 'https://www.vendr.com/marketplace/wiz',
             contact: 'Vendor sales',
-            note: 'Wiz does not publish list pricing. Vendr aggregate of negotiated deals: $50k–$100k/yr for SMB (<1,000 workloads), scaling to $200k+ at mid-market. Per-workload effective rate ~$10–$30/yr.' },
+            note: 'Wiz does not publish list pricing. Vendr median negotiated deal $149,319/yr; deals range $50k–$200k+ depending on workload count. Per-workload effective rate ~$10–$30/yr.' },
     ecosystem: ['commercial'] },
 
   { id: 'orca', vendor: 'Orca Security', name: 'Orca Security CNAPP',
     capabilities: ['cnapp','cspm','container-scan','vm-cloud'],
-    cost: { model: 'fixed', unit: 60000, units: 1, annual: 60000, source: 'estimate',
+    cost: { model: 'fixed', unit: 99901, units: 1, annual: 99901, source: 'estimate',
             sourceUrl: 'https://www.vendr.com/marketplace/orca-security',
             contact: 'Vendor sales',
-            note: 'Orca does not publish list pricing. Vendr aggregate of negotiated deals: SMB workload-based pricing in the $40k–$80k/yr range. Volume discounts at higher workload tiers.' },
+            note: 'Orca does not publish list pricing. Vendr median negotiated deal $99,901/yr; SMB workload-based pricing typically $60k–$120k/yr with volume discounts at higher tiers.' },
     ecosystem: ['commercial'] },
 
   { id: 'prisma-cloud', vendor: 'Palo Alto', name: 'Prisma Cloud',
@@ -1031,18 +1031,18 @@ window.SOLUTIONS = [
 
   { id: 'jumpcloud', vendor: 'JumpCloud', name: 'JumpCloud Directory Platform',
     capabilities: ['iam','patch-mgmt'],
-    cost: { model: 'per-user', unit: 156, units: 100, annual: 15600, source: 'estimate',
+    cost: { model: 'per-user', unit: 276, units: 100, annual: 27600, source: 'estimate',
             sourceUrl: 'https://jumpcloud.com/pricing',
             contact: 'Vendor sales',
-            note: 'A la carte $13/user/month for SSO+MFA+MDM bundle. Cheaper packages available.' },
+            note: 'A la carte (annual billing): SSO $11/user/mo + MFA $3/user/mo + Device Management $9/user/mo = $23/user/mo ($276/yr). Platform bundles available via sales.' },
     ecosystem: ['commercial'] },
 
   { id: 'auth0', vendor: 'Okta', name: 'Auth0 (B2C/B2B)',
     capabilities: ['iam'],
-    cost: { model: 'fixed', unit: 2280, units: 1, annual: 2280, source: 'estimate',
+    cost: { model: 'fixed', unit: 2880, units: 1, annual: 2880, source: 'estimate',
             sourceUrl: 'https://auth0.com/pricing',
             contact: 'Vendor sales',
-            note: 'Essentials starts near $190/month for 1k MAUs. Customer-facing apps; not workforce IAM.' },
+            note: 'Essentials starts near $240/month for 1k MAUs. Customer-facing apps; not workforce IAM.' },
     ecosystem: ['commercial'] },
 
   { id: 'keycloak', vendor: 'Red Hat', name: 'Keycloak (OSS)',
@@ -1103,10 +1103,10 @@ window.SOLUTIONS = [
 
   { id: 'netskope', vendor: 'Netskope', name: 'Netskope SSE (CASB+SWG+DLP)',
     capabilities: ['dlp'],
-    cost: { model: 'per-user', unit: 144, units: 100, annual: 14400, source: 'estimate',
+    cost: { model: 'per-user', unit: 360, units: 100, annual: 36000, source: 'estimate',
             sourceUrl: 'https://www.vendr.com/marketplace/netskope',
             contact: 'Vendor sales',
-            note: 'Netskope does not publish list pricing. Vendr aggregate: SSE per-user $8–$16/user/month depending on tier; CASB-only $15–$35/user/month; full SASE $60+/user/month. Midpoint $12/user/month = $144/yr.' },
+            note: 'Netskope does not publish list pricing. Vendr aggregates: CASB-only $15–$35/user/mo, SWG $20–$45, ZTNA $25–$50, full SASE bundle $40–$75. SSE stack (CASB+SWG+DLP) midpoint ~$30/user/mo = $360/yr.' },
     ecosystem: ['commercial'] },
 
   { id: 'mdca', vendor: 'Microsoft', name: 'Defender for Cloud Apps (CASB)',
@@ -1199,10 +1199,10 @@ window.SOLUTIONS = [
 
   { id: 'gcp-cloud-armor', vendor: 'Google Cloud', name: 'Cloud Armor (Standard)',
     capabilities: ['waf'],
-    cost: { model: 'fixed', unit: 1200, units: 1, annual: 1200, source: 'estimate',
+    cost: { model: 'fixed', unit: 2400, units: 1, annual: 2400, source: 'estimate',
             sourceUrl: 'https://cloud.google.com/armor/pricing',
             contact: 'Vendor sales',
-            note: 'Standard tier: $5/policy/month + $1/rule/month + $0.75 per million requests. SMB at 1 policy + 10 rules + 10M requests/month ~$100/month = $1,200/yr. Cloud Armor Plus is annual subscription quote.' },
+            note: 'Standard tier: $0.273972603/hour per protected resource ($2,400/yr) after a 2-month free trial, plus $0.75 per million global-scope requests ($0.60 regional). SMB at 1 protected resource lands ~$2,400/yr. Enterprise Annual subscription is $36,000/yr (100 resources included).' },
     ecosystem: ['gcp-native'] },
 ];
 

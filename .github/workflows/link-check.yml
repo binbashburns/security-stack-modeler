@@ -58,28 +58,39 @@ jobs:
                 'User-Agent': 'Mozilla/5.0 (compatible; security-stack-modeler-link-check/1.0; +https://github.com/)',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
               };
-              try {
-                let response = await fetch(url, { method: 'HEAD', redirect: 'follow', headers: ua });
-                if (!response.ok || response.status >= 400) {
-                  response = await fetch(url, { method: 'GET', redirect: 'follow', headers: ua });
+              // Retry on transport-level errors (DNS/TCP/TLS blips surface as a thrown
+              // "fetch failed" with no status). HTTP status responses are not retried —
+              // those are answers from the server, not network flakes.
+              const maxAttempts = 3;
+              let lastError;
+              for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                try {
+                  let response = await fetch(url, { method: 'HEAD', redirect: 'follow', headers: ua });
+                  if (!response.ok || response.status >= 400) {
+                    response = await fetch(url, { method: 'GET', redirect: 'follow', headers: ua });
+                  }
+                  const status = response.status;
+                  const ok = status >= 200 && status < 400;
+                  return {
+                    url,
+                    status,
+                    ok,
+                    botBlocked: !ok && BOT_BLOCK_CODES.has(status),
+                  };
+                } catch (error) {
+                  lastError = error;
+                  if (attempt < maxAttempts) {
+                    await new Promise(r => setTimeout(r, 1000 * attempt));
+                  }
                 }
-                const status = response.status;
-                const ok = status >= 200 && status < 400;
-                return {
-                  url,
-                  status,
-                  ok,
-                  botBlocked: !ok && BOT_BLOCK_CODES.has(status),
-                };
-              } catch (error) {
-                return {
-                  url,
-                  status: 0,
-                  ok: false,
-                  botBlocked: false,
-                  error: error.message || String(error),
-                };
               }
+              return {
+                url,
+                status: 0,
+                ok: false,
+                botBlocked: false,
+                error: lastError ? (lastError.message || String(lastError)) : 'fetch failed',
+              };
             }
 
             const failures = [];

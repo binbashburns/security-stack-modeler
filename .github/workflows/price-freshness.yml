@@ -1,6 +1,5 @@
 name: Price freshness audit
 
-
 on:
   schedule:
     - cron: "0 7 * * 1" # Monday 07:00 UTC
@@ -9,7 +8,6 @@ on:
 permissions:
   contents: read
   issues: write
-  models: read
 
 jobs:
   audit:
@@ -25,8 +23,6 @@ jobs:
 
       - name: Run price audit
         id: audit
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           node .github/scripts/price-freshness.mjs > /tmp/report.json
           echo "report-path=/tmp/report.json" >> "$GITHUB_OUTPUT"
@@ -40,15 +36,18 @@ jobs:
             const drifts = report.drifts || [];
             const noPrice = report.noPrice || [];
             const failures = report.fetchFailures || [];
+            const botBlocked = report.botBlocked || [];
 
             const total = drifts.length + noPrice.length + failures.length;
             if (total === 0) {
-              core.info(`All ${report.total} commercial price citations match. Nothing to report.`);
+              core.info(`All ${report.total} commercial price citations match (${botBlocked.length} bot-blocked, ignored). Nothing to report.`);
               return;
             }
 
             const lines = [];
             lines.push(`Weekly price audit found ${total} entr${total === 1 ? 'y' : 'ies'} that need attention out of ${report.total} commercial solutions checked.`);
+            lines.push('');
+            lines.push('_Auditor is deterministic (page fetch + dollar extraction with monthly→annual normalization). GitHub Models was retired 2026-07-30, so the previous LLM-based checker is gone._');
             lines.push('');
 
             if (drifts.length) {
@@ -79,10 +78,21 @@ jobs:
               lines.push(`### URL fetch problems (${failures.length})`);
               lines.push('');
               lines.push('| Solution | URL | Status |');
-              lines.push('| --- | --- | --- |');
+              lines.push('| --- | ------ | ------ |');
               for (const f of failures) {
                 const detail = f.http ? `HTTP ${f.http}` : (f.error || f.status);
                 lines.push(`| ${f.vendor} ${f.name} | ${f.url} | ${detail} |`);
+              }
+              lines.push('');
+            }
+
+            if (botBlocked.length) {
+              lines.push(`### Bot-blocked (logged, not failing) (${botBlocked.length})`);
+              lines.push('');
+              lines.push('| Solution | URL | Status |');
+              lines.push('| --- | --- | --- |');
+              for (const f of botBlocked) {
+                lines.push(`| ${f.vendor} ${f.name} | ${f.url} | HTTP ${f.http} |`);
               }
               lines.push('');
             }

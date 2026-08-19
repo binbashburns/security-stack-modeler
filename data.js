@@ -297,6 +297,14 @@ window.SOLUTIONS = [
     ecosystem: [], gap: true,
     notes: 'Default for every capability. Pick a real tool to cover it.' },
 
+    { id: 'covered-external', vendor: 'Covered by another tool', name: 'Existing / external control',
+    capabilities: [],
+    cost: { model: 'free', unit: 0, units: 0, annual: 0, source: 'free',
+            sourceUrl: '', contact: '',
+            note: 'Covered by a tool modeled elsewhere. No net new spend.' },
+    ecosystem: [], external: true,
+    notes: 'Mark this capability as already covered by another tool. Adds $0 and shows on the report with your note.' },
+
     { id: 'codeowners-native', vendor: 'Source-control native', name: 'CODEOWNERS + branch / merge protection',
     capabilities: ['code-review-controls'],
     cost: { model: 'free', unit: 0, units: 0, annual: 0, source: 'free',
@@ -412,7 +420,7 @@ window.SOLUTIONS = [
 
   { id: 'gitlab-ultimate', vendor: 'GitLab', name: 'GitLab Ultimate',
     capabilities: ['code-review-controls','precommit-hooks','sast','sca','sbom','dast','container-scan','iac-scan','pipeline-security','policy-as-code','reporting'],
-    cost: { model: 'per-user', unit: 1188, units: 100, annual: 118800, source: 'estimate',
+    cost: { model: 'per-developer', unit: 1188, units: 100, annual: 118800, source: 'estimate',
             sourceUrl: 'https://www.vendr.com/marketplace/gitlab',
             contact: 'Vendor sales',
             note: 'about.gitlab.com/pricing no longer lists Ultimate dollars. Vendr cites Ultimate list at $99/user/month ($1,188/user/year) for SaaS; Premium is $29/user/month. Bundles full security suite.' },

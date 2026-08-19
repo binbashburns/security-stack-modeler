@@ -437,6 +437,9 @@ a:hover { text-decoration: underline; }
 .cap-card.is-gap .cap-card-label {
   color: var(--text-muted);
 }
+.cap-card.is-external {
+  border-left: 3px solid var(--accent-deep);
+}
 
 .cap-card-label {
   font-size: 10px; font-weight: 700;
@@ -683,6 +686,19 @@ button.cap-card:focus-visible {
   padding-left: 21px;
 }
 .modal-option.is-gap { background: var(--surface-alt); }
+.modal-option.is-external { background: var(--accent-soft); }
+.modal-option-note-input {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+}
+.modal-option-note-input::placeholder { color: var(--text-subtle); }
 
 .modal-option-left { min-width: 0; }
 .modal-option-vendor {

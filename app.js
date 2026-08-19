@@ -28,6 +28,7 @@ const SIZING_HINTS = {
 const fmt$ = n => n == null ? '$0' : '$' + Math.round(n).toLocaleString();
 
 const isUnselected = sol => !sol || sol.id === 'none' || sol.gap;
+const isExternal = sol => !!(sol && sol.external);
 const sizingDimFor = sol => sol && sol.cost ? (COST_DIMS[sol.cost.model] || null) : null;
 const isSizedModel = sol => sizingDimFor(sol) != null;
 
@@ -38,6 +39,7 @@ const state = {
   enforcement: {},
   orgSizing: { ...window.MODEL_META.defaultSizing },
   costOverrides: {},
+  coverageNotes: {},
   frameworkFilter: 'all',
   modal: null,
   lastAutoFill: null, // { solId, capIds: [] } — for one-shot highlight after auto-fill
@@ -404,6 +406,7 @@ function renderCapCard(cap) {
   const solId = state.selections[cap.id] || 'none';
   const sol = SOLUTIONS_BY_ID[solId] || SOLUTIONS_BY_ID['none'];
   const unselected = isUnselected(sol);
+  const external = isExternal(sol);
   const cost = effectiveCost(sol);
   const isPrimary = isPrimaryCapForSolution(cap.id, solId);
   const isAutoFlash = state.lastAutoFill && state.lastAutoFill.capIds.includes(cap.id);
@@ -413,6 +416,7 @@ function renderCapCard(cap) {
   card.setAttribute('aria-label', `Solution for ${cap.name}: ${unselected ? 'not selected' : sol.vendor + ' ' + sol.name}. Click to change.`);
   if (unselected) card.classList.add('is-gap');
   else card.classList.add('is-active');
+  if (external) card.classList.add('is-external');
   if (!unselected && !isPrimary) card.classList.add('is-included');
   if (isAutoFlash) card.classList.add('is-autofill-flash');
 
@@ -422,6 +426,9 @@ function renderCapCard(cap) {
   if (unselected) {
     body.appendChild(el('div', 'cap-card-gap-label', 'not selected'));
     body.appendChild(el('div', 'cap-card-name', 'click to pick a solution'));
+  } else if (external) {
+    body.appendChild(el('div', 'cap-card-vendor', 'Covered by another tool'));
+    body.appendChild(el('div', 'cap-card-name', state.coverageNotes[cap.id] || 'external control'));
   } else {
     body.appendChild(el('div', 'cap-card-vendor', sol.vendor));
     body.appendChild(el('div', 'cap-card-name', sol.name));
@@ -431,6 +438,7 @@ function renderCapCard(cap) {
   const footer = el('div', 'cap-card-footer');
   let costText;
   if (unselected) costText = ',';
+  else if (external) costText = '$0/yr';
   else if (!isPrimary) costText = 'included';
   else if (sol.cost.source === 'free') costText = 'free';
   else costText = fmt$(cost.annual) + '/yr';
@@ -477,6 +485,23 @@ function renderSelectionsDetail() {
   for (const [solId, caps] of sorted) {
     const sol = SOLUTIONS_BY_ID[solId];
     if (!sol) continue;
+
+    if (solId === 'covered-external') {
+      for (const capId of caps) {
+        const capName = CAPABILITIES_BY_ID[capId]?.name || capId;
+        const xcard = el('div', 'solution-card is-external');
+        const xhead = el('div', 'solution-card-head');
+        xhead.appendChild(el('div', 'solution-card-vendor', 'Covered by another tool'));
+        xhead.appendChild(el('div', 'solution-card-cost', '$0/yr'));
+        xcard.appendChild(xhead);
+        xcard.appendChild(el('div', 'solution-card-name', state.coverageNotes[capId] || 'external control'));
+        xcard.appendChild(el('div', 'solution-card-cap', `Covers: ${capName}`));
+        xcard.appendChild(el('div', 'solution-card-cap', 'No net new spend.'));
+        grid.appendChild(xcard);
+      }
+      continue;
+    }
+
     const card = el('div', 'solution-card');
 
     const head = el('div', 'solution-card-head');
@@ -602,10 +627,14 @@ function renderPickerModal(capId) {
   const cap = CAPABILITIES_BY_ID[capId];
   const currentId = state.selections[capId] || 'none';
 
-  const matching = window.SOLUTIONS.filter(s => s.capabilities.includes(capId) || s.id === 'none');
+  const matching = window.SOLUTIONS.filter(s =>
+    s.capabilities.includes(capId) || s.id === 'none' || s.id === 'covered-external');
+
+  const pickerRank = s => s.id === 'none' ? 2 : s.id === 'covered-external' ? 1 : 0;
   matching.sort((a, b) => {
-    if (a.id === 'none') return 1;
-    if (b.id === 'none') return -1;
+    const ra = pickerRank(a), rb = pickerRank(b);
+    if (ra !== rb) return ra - rb;
+    if (ra !== 0) return 0; // both sentinels at same rank
     const ca = effectiveCost(a).annual || 0;
     const cb = effectiveCost(b).annual || 0;
     if (ca !== cb) return ca - cb;
@@ -646,17 +675,31 @@ function renderPickerModal(capId) {
 function renderPickerOption(capId, sol, currentId) {
   const isCurrent = sol.id === currentId;
   const unselected = isUnselected(sol);
-  const isFree = sol.cost.source === 'free' && !unselected;
+  const external = isExternal(sol);
+  const isFree = sol.cost.source === 'free' && !unselected && !external;
   const cost = effectiveCost(sol);
+  let noteInput = null;
 
   const row = el('div', 'modal-option');
   if (isCurrent) row.classList.add('is-current');
   if (unselected) row.classList.add('is-gap');
+  if (external) row.classList.add('is-external');
 
   const left = el('div', 'modal-option-left');
   if (unselected) {
     left.appendChild(el('div', 'modal-option-name', 'Not selected'));
     left.appendChild(el('div', 'modal-option-vendor-line', 'Leave this capability unfilled. The Coverage matrix will flag any controls that depend on it.'));
+  } else if (external) {
+    left.appendChild(el('div', 'modal-option-name', 'Covered by another tool'));
+    left.appendChild(el('div', 'modal-option-vendor-line', 'Mark this capability as already handled by an existing tool. Adds $0 and shows on the report with your note.'));
+    noteInput = document.createElement('input');
+    noteInput.type = 'text';
+    noteInput.className = 'modal-option-note-input';
+    noteInput.placeholder = 'e.g. we use AcmeScan for this control';
+    noteInput.value = state.coverageNotes[capId] || '';
+    noteInput.addEventListener('click', e => e.stopPropagation());
+    noteInput.addEventListener('input', () => { state.coverageNotes[capId] = noteInput.value; });
+    left.appendChild(noteInput);
   } else {
     left.appendChild(el('div', 'modal-option-vendor-line', sol.vendor));
     left.appendChild(el('div', 'modal-option-name', sol.name));
@@ -702,14 +745,17 @@ function renderPickerOption(capId, sol, currentId) {
   const right = el('div', 'modal-option-right');
   let priceText, priceCls = '';
   if (unselected) { priceText = ','; priceCls = 'cost-gap'; }
+  else if (external) { priceText = '$0'; priceCls = 'cost-free'; }
   else if (isFree) { priceText = 'free'; priceCls = 'cost-free'; }
   else { priceText = fmt$(cost.annual) + '/yr'; priceCls = 'cost-paid'; }
   right.appendChild(el('div', `modal-option-cost ${priceCls}`, priceText));
-  if (!unselected) {
+  if (external) {
+    right.appendChild(el('div', 'modal-option-dim', 'no net new spend'));
+  } else if (!unselected) {
     right.appendChild(el('div', `modal-option-source-tag source-${sol.cost.source}`, sol.cost.source));
   }
 
-  if (!unselected && !isFree) {
+  if (!unselected && !external && !isFree) {
     const dim = sizingDimFor(sol);
     const editor = el('div', 'modal-option-editor');
     editor.appendChild(el('span', 'modal-option-meta-label', `${sol.cost.model}: $`));
@@ -759,6 +805,7 @@ function renderPickerOption(capId, sol, currentId) {
     selectBtn.type = 'button';
     selectBtn.addEventListener('click', e => {
       e.stopPropagation();
+      if (external && noteInput) state.coverageNotes[capId] = noteInput.value;
       applySelection(capId, sol.id);
       state.scenarioId = 'custom';
       closeModal();
@@ -1301,14 +1348,20 @@ function renderPrintSummary() {
   for (const { cap, sol } of rows) {
     const tr = document.createElement('tr');
     const unselected = isUnselected(sol);
+    const external = isExternal(sol);
     if (unselected) tr.classList.add('row-gap');
+    if (external) tr.classList.add('row-external');
     const cost = effectiveCost(sol);
     const isPrimary = isPrimaryCapForSolution(cap.id, sol.id);
+    const note = state.coverageNotes[cap.id] || '';
     const costStr = unselected
       ? ','
-      : !isPrimary
-        ? 'included'
-        : (sol.cost.source === 'free' ? 'free' : fmt$(cost.annual) + '/yr');
+      : external
+        ? '$0'
+        : !isPrimary
+          ? 'included'
+          : (sol.cost.source === 'free' ? 'free' : fmt$(cost.annual) + '/yr');
+    const costSubStr = external ? 'no net new spend' : sol.cost.source;
     const sourceStr = sol.cost.sourceUrl
       ? (sol.cost.sourceUrl.startsWith('http')
           ? `<a href="${escapeAttr(sol.cost.sourceUrl)}">${escapeText(shortUrl(sol.cost.sourceUrl))}</a>`
@@ -1317,12 +1370,17 @@ function renderPrintSummary() {
     const contactStr = sol.cost.contact ? escapeText(sol.cost.contact) : '<span class="muted">,</span>';
     const vendorCell = unselected
       ? '<span class="muted">not selected</span>'
-      : `<div class="cell-vendor">${escapeText(sol.vendor)}</div><div class="cell-name">${escapeText(sol.name)}</div>`;
+      : external
+        ? `<div class="cell-vendor">Covered by another tool</div>${note ? `<div class="cell-name">${escapeText(note)}</div>` : ''}`
+        : `<div class="cell-vendor">${escapeText(sol.vendor)}</div><div class="cell-name">${escapeText(sol.name)}</div>`;
+    const basisCell = external
+      ? escapeText(note || 'Covered by another tool')
+      : escapeText(sol.cost.note || sol.cost.model);
     tr.innerHTML = `
       <td><div class="cell-cap">${escapeText(cap.name)}</div><div class="cell-sub">${escapeText(cap.domain)}</div></td>
       <td>${vendorCell}</td>
-      <td>${escapeText(sol.cost.note || sol.cost.model)}</td>
-      <td class="cell-cost">${costStr}<div class="cell-sub source-${sol.cost.source}">${sol.cost.source}</div></td>
+      <td>${basisCell}</td>
+      <td class="cell-cost">${costStr}<div class="cell-sub source-${sol.cost.source}">${escapeText(costSubStr)}</div></td>
       <td class="cell-source">${sourceStr}</td>
       <td>${contactStr}</td>`;
     tbody.appendChild(tr);

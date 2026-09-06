@@ -16,8 +16,8 @@ python3 -m http.server 8000
 
 Open <http://localhost:8000>. Stop with `Ctrl+C`.
 
-You can also open `index.html` directly in a browser, the app has no
-backend.
+Use the local server: `app.js` is a browser module, so direct `file://`
+loading is not a reliable development path. The app has no backend.
 
 ## Files
 
@@ -30,10 +30,10 @@ backend.
 
 - **Scenario**. Pick a tool per capability across lifecycle lanes. Live
   annual cost. Export the plan as a PDF.
-- **Coverage**. Matrix of NIST CSF 2.0 + SOC 2 controls against capabilities,
+- **Coverage**. Matrix of NIST CSF 2.0, SOC 2, and NIST SSDF controls against capabilities,
   colored by whether the current selections cover each control.
-- **Pipeline**. DevSecOps SDLC ribbon (Plan → Pre-Commit → Commit → Build
-  → Test → Pre-Release → Deploy → Operate). Pick a tool per stage,
+- **Pipeline**. DevSecOps SDLC ribbon (Plan → Pre-Commit → Build
+  → Test → Deploy → Operate). Pick a tool per capability,
   advance visibility / soft / hard enforcement maturity per capability.
 
 ## Start-from-zero
@@ -42,19 +42,31 @@ The app loads with **no tools selected**. Every capability begins in the
 "Not selected" state, and the user explicitly picks each one. There is no
 preloaded baseline.
 
-Scenarios are opt-in templates (FOSS-first, AWS-native, Azure-native,
-GCP-native, Enterprise commercial, Greenfield startup) the user can load
+Scenarios are opt-in templates (FOSS-Native, AWS-Native, Azure / Microsoft-Native,
+GCP-Native, Enterprise Commercial, GitHub-Native, GitLab-Native) the user can load
 to seed the board with a starting point.
 
 ## Cost data
 
 All prices are directional estimates from public vendor pricing pages or
-free for open-source tools. The Catalog tab lets the user override unit
-price and quantity to plug in a real quote during procurement.
+free for open-source tools. The solution picker lets the user override annual
+unit prices and, for products without an org sizing dimension, quantities.
+Per-developer, per-user, and other sized products use the shared Org sizing inputs.
 
 Each solution carries a `source` tag (`estimate` or `free`), a `sourceUrl`
 to the published price, and a generic contact role to verify with. Click
 any capability card in the app to see all three for that line.
+
+## Tests
+
+Run the offline regression tests with Node.js 24 or newer:
+
+```sh
+node --test tests/*.test.mjs
+```
+
+The tests cover budget calculations, shared scanner exports, and price-audit
+classification without fetching vendor sites.
 
 ## License
 

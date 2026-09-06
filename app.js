@@ -67,15 +67,22 @@ function loadScenario(scenarioId) {
   }
 }
 
+function nonNegativeNumber(value, fallback = 0) {
+  if (typeof value === 'string' && value.trim() === '') return fallback;
+  const n = Number(value);
+  // Bound inputs to the safe numeric range so products and totals stay finite.
+  return Number.isFinite(n) && n >= 0 && n <= Number.MAX_SAFE_INTEGER ? n : fallback;
+}
+
 function effectiveCost(solution) {
   const ov = state.costOverrides[solution.id] || {};
-  const unit = ov.unit != null ? Number(ov.unit) : solution.cost.unit;
+  const unit = nonNegativeNumber(ov.unit ?? solution.cost.unit, solution.cost.unit);
   const dim = sizingDimFor(solution);
   let units;
   if (dim) {
-    units = Number(state.orgSizing[dim] ?? 0);
+    units = nonNegativeNumber(state.orgSizing[dim] ?? 0, window.MODEL_META.defaultSizing[dim] ?? 0);
   } else {
-    units = ov.units != null ? Number(ov.units) : solution.cost.units;
+    units = nonNegativeNumber(ov.units ?? solution.cost.units, solution.cost.units);
   }
   const annual = unit * units;
   return { unit, units, annual, dim };
@@ -235,10 +242,11 @@ function renderOrgSizingPanel() {
     const input = document.createElement('input');
     input.type = 'number';
     input.min = '0';
+    input.max = String(Number.MAX_SAFE_INTEGER);
     input.value = state.orgSizing[dim] ?? 0;
     input.className = 'org-sizing-input';
     input.addEventListener('change', () => {
-      const n = Math.max(0, Number(input.value) || 0);
+      const n = nonNegativeNumber(input.value, state.orgSizing[dim]);
       state.orgSizing[dim] = n;
       render();
     });
@@ -761,6 +769,7 @@ function renderPickerOption(capId, sol, currentId) {
     editor.appendChild(el('span', 'modal-option-meta-label', `${sol.cost.model}: $`));
     const unitInput = document.createElement('input');
     unitInput.type = 'number'; unitInput.step = '0.01';
+    unitInput.min = '0'; unitInput.max = String(Number.MAX_SAFE_INTEGER);
     unitInput.value = (state.costOverrides[sol.id]?.unit ?? sol.cost.unit);
     editor.appendChild(unitInput);
 
@@ -776,6 +785,7 @@ function renderPickerOption(capId, sol, currentId) {
       editor.appendChild(el('span', 'modal-option-meta-label', '×'));
       unitsInput = document.createElement('input');
       unitsInput.type = 'number';
+      unitsInput.min = '0'; unitsInput.max = String(Number.MAX_SAFE_INTEGER);
       unitsInput.value = (state.costOverrides[sol.id]?.units ?? sol.cost.units);
       editor.appendChild(unitsInput);
     }
@@ -784,8 +794,13 @@ function renderPickerOption(capId, sol, currentId) {
       inp.addEventListener('click', e => e.stopPropagation());
       inp.addEventListener('change', () => {
         const ov = state.costOverrides[sol.id] || {};
-        ov.unit = Number(unitInput.value);
-        if (unitsInput) ov.units = Number(unitsInput.value);
+        const current = effectiveCost(sol);
+        ov.unit = nonNegativeNumber(unitInput.value, current.unit);
+        unitInput.value = ov.unit;
+        if (unitsInput) {
+          ov.units = nonNegativeNumber(unitsInput.value, current.units);
+          unitsInput.value = ov.units;
+        }
         state.costOverrides[sol.id] = ov;
         if (isCurrent) {
           render();
@@ -1020,14 +1035,22 @@ const CI_STAGE_DESCRIPTIONS = {
 
 function ciSelectionsByStage() {
   const byStage = new Map();
+  const bySolution = new Map();
   for (const [capId, solId] of Object.entries(state.selections)) {
     if (solId === 'none') continue;
     const sol = SOLUTIONS_BY_ID[solId];
     if (!sol || !sol.ci || !sol.ci.github) continue;
     const block = sol.ci.github;
     const stage = block.stage || 'build';
+    const existing = bySolution.get(solId);
+    if (existing) {
+      existing.capIds.push(capId);
+      continue;
+    }
+    const entry = { sol, capIds: [capId], block };
+    bySolution.set(solId, entry);
     if (!byStage.has(stage)) byStage.set(stage, []);
-    byStage.get(stage).push({ sol, capId, block });
+    byStage.get(stage).push(entry);
   }
   return byStage;
 }
@@ -1116,11 +1139,12 @@ function buildCiWorkflowYaml() {
         { name: 'Checkout', uses: 'actions/checkout@v4' },
       ],
     };
-    for (const { sol, capId, block } of items) {
-      const phase = state.enforcement[capId] || 'none';
+    for (const { capIds, block } of items) {
+      // A shared scanner must honor hard enforcement on any capability it covers.
+      const hard = capIds.some(capId => state.enforcement[capId] === 'hard');
       const step = { ...block.step };
-      // Inject continue-on-error for non-hard enforcement.
-      if (phase !== 'hard') step['continue-on-error'] = true;
+      if (hard) delete step['continue-on-error'];
+      else step['continue-on-error'] = true;
       job.steps.push(step);
     }
     root.jobs[jobName] = job;
